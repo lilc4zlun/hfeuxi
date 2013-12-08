@@ -1,62 +1,63 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuite failures="0" time="0.04" errors="0" skipped="0" tests="1" name="org.intel.im.analytics.hiveudfs.AppTest">
+<testsuite failures="0" time="0.003" errors="0" skipped="0" tests="1" name="org.intel.im.analytics.hiveudfs.AppTest">
   <properties>
     <property name="java.runtime.name" value="Java(TM) SE Runtime Environment"/>
-    <property name="sun.boot.library.path" value="/usr/java/jdk1.6.0_32/jre/lib/amd64"/>
-    <property name="java.vm.version" value="20.7-b02"/>
+    <property name="sun.boot.library.path" value="C:\Program Files\Java\jre6\bin"/>
+    <property name="java.vm.version" value="20.45-b01"/>
     <property name="java.vm.vendor" value="Sun Microsystems Inc."/>
     <property name="java.vendor.url" value="http://java.sun.com/"/>
-    <property name="path.separator" value=":"/>
+    <property name="path.separator" value=";"/>
     <property name="guice.disable.misplaced.annotation.check" value="true"/>
     <property name="java.vm.name" value="Java HotSpot(TM) 64-Bit Server VM"/>
     <property name="file.encoding.pkg" value="sun.io"/>
     <property name="user.country" value="US"/>
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
-    <property name="sun.os.patch.level" value="unknown"/>
+    <property name="sun.os.patch.level" value="Service Pack 1"/>
     <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
-    <property name="user.dir" value="/home/cloudera/workspace/hiveudfs"/>
-    <property name="java.runtime.version" value="1.6.0_32-b05"/>
-    <property name="java.awt.graphicsenv" value="sun.awt.X11GraphicsEnvironment"/>
-    <property name="java.endorsed.dirs" value="/usr/java/jdk1.6.0_32/jre/lib/endorsed"/>
+    <property name="user.dir" value="C:\Users\lcheng2\hfeuxi\hiveudfs"/>
+    <property name="java.runtime.version" value="1.6.0_45-b06"/>
+    <property name="java.awt.graphicsenv" value="sun.awt.Win32GraphicsEnvironment"/>
+    <property name="java.endorsed.dirs" value="C:\Program Files\Java\jre6\lib\endorsed"/>
     <property name="os.arch" value="amd64"/>
-    <property name="java.io.tmpdir" value="/tmp"/>
+    <property name="java.io.tmpdir" value="C:\Users\lcheng2\AppData\Local\Temp\"/>
     <property name="line.separator" value="
 "/>
     <property name="java.vm.specification.vendor" value="Sun Microsystems Inc."/>
-    <property name="os.name" value="Linux"/>
-    <property name="classworlds.conf" value="/usr/local/apache-maven/apache-maven-3.0.4/bin/m2.conf"/>
-    <property name="sun.jnu.encoding" value="UTF-8"/>
-    <property name="java.library.path" value="/usr/java/jdk1.6.0_32/jre/lib/amd64/server:/usr/java/jdk1.6.0_32/jre/lib/amd64:/usr/java/jdk1.6.0_32/jre/../lib/amd64:/usr/java/packages/lib/amd64:/usr/lib64:/lib64:/lib:/usr/lib"/>
+    <property name="user.variant" value=""/>
+    <property name="os.name" value="Windows 7"/>
+    <property name="classworlds.conf" value="C:\maven\apache-maven-3.0.5\bin\..\bin\m2.conf"/>
+    <property name="sun.jnu.encoding" value="Cp1252"/>
+    <property name="java.library.path" value="C:\Program Files\Java\jre6\bin;C:\Windows\Sun\Java\bin;C:\Windows\system32;C:\Windows;C:\PROGRAM FILES (X86)\TERADATA\CLIENT\13.0\ODBC DRIVER FOR TERADATA\LIB;C:\Windows\SYSTEM32;C:\Windows;C:\Windows\SYSTEM32\WBEM;C:\Windows\SYSTEM32\WINDOWSPOWERSHELL\V1.0\;;C:\PROGRAM FILES (X86)\TERADATA\CLIENT\13.0\SHARED ICU LIBRARIES FOR TERADATA\LIB\;C:\PROGRAM FILES\INTEL\WIFI\BIN\;C:\PROGRAM FILES\COMMON FILES\INTEL\WIRELESSCOMMON\;C:\PROGRAM FILES (X86)\QUICKTIME\QTSYSTEM\;C:\PROGRAM FILES (X86)\SCALA\\BIN;C:\Program Files\ThinkPad\Bluetooth Software\;C:\Program Files\ThinkPad\Bluetooth Software\syswow64;C:\Program Files\Java\jdk1.7.0_13\bin;c:\cygwin\bin;c:\cygwin\usr\bin;C:\Python33;C:\maven\apache-maven-3.0.5\bin;."/>
     <property name="java.specification.name" value="Java Platform API Specification"/>
     <property name="java.class.version" value="50.0"/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
-    <property name="os.version" value="2.6.32-220.el6.x86_64"/>
-    <property name="user.home" value="/home/cloudera"/>
-    <property name="user.timezone" value="US/Pacific"/>
-    <property name="java.awt.printerjob" value="sun.print.PSPrinterJob"/>
-    <property name="file.encoding" value="UTF-8"/>
+    <property name="os.version" value="6.1"/>
+    <property name="user.home" value="C:\Users\lcheng2"/>
+    <property name="user.timezone" value="America/Los_Angeles"/>
+    <property name="java.awt.printerjob" value="sun.awt.windows.WPrinterJob"/>
+    <property name="file.encoding" value="Cp1252"/>
     <property name="java.specification.version" value="1.6"/>
-    <property name="user.name" value="cloudera"/>
-    <property name="java.class.path" value="/usr/local/apache-maven/apache-maven-3.0.4/boot/plexus-classworlds-2.4.jar"/>
+    <property name="user.name" value="lcheng2"/>
+    <property name="java.class.path" value="C:\maven\apache-maven-3.0.5\bin\..\boot\plexus-classworlds-2.4.jar"/>
     <property name="java.vm.specification.version" value="1.0"/>
     <property name="sun.arch.data.model" value="64"/>
-    <property name="java.home" value="/usr/java/jdk1.6.0_32/jre"/>
+    <property name="java.home" value="C:\Program Files\Java\jre6"/>
     <property name="sun.java.command" value="org.codehaus.plexus.classworlds.launcher.Launcher package"/>
     <property name="java.specification.vendor" value="Sun Microsystems Inc."/>
     <property name="user.language" value="en"/>
+    <property name="awt.toolkit" value="sun.awt.windows.WToolkit"/>
     <property name="java.vm.info" value="mixed mode"/>
-    <property name="java.version" value="1.6.0_32"/>
-    <property name="java.ext.dirs" value="/usr/java/jdk1.6.0_32/jre/lib/ext:/usr/java/packages/lib/ext"/>
-    <property name="securerandom.source" value="file:/dev/./urandom"/>
-    <property name="sun.boot.class.path" value="/usr/java/jdk1.6.0_32/jre/lib/resources.jar:/usr/java/jdk1.6.0_32/jre/lib/rt.jar:/usr/java/jdk1.6.0_32/jre/lib/sunrsasign.jar:/usr/java/jdk1.6.0_32/jre/lib/jsse.jar:/usr/java/jdk1.6.0_32/jre/lib/jce.jar:/usr/java/jdk1.6.0_32/jre/lib/charsets.jar:/usr/java/jdk1.6.0_32/jre/lib/modules/jdk.boot.jar:/usr/java/jdk1.6.0_32/jre/classes"/>
+    <property name="java.version" value="1.6.0_45"/>
+    <property name="java.ext.dirs" value="C:\Program Files\Java\jre6\lib\ext;C:\Windows\Sun\Java\lib\ext"/>
+    <property name="sun.boot.class.path" value="C:\Program Files\Java\jre6\lib\resources.jar;C:\Program Files\Java\jre6\lib\rt.jar;C:\Program Files\Java\jre6\lib\sunrsasign.jar;C:\Program Files\Java\jre6\lib\jsse.jar;C:\Program Files\Java\jre6\lib\jce.jar;C:\Program Files\Java\jre6\lib\charsets.jar;C:\Program Files\Java\jre6\lib\modules\jdk.boot.jar;C:\Program Files\Java\jre6\classes"/>
     <property name="java.vendor" value="Sun Microsystems Inc."/>
-    <property name="maven.home" value="/usr/local/apache-maven/apache-maven-3.0.4"/>
-    <property name="file.separator" value="/"/>
+    <property name="maven.home" value="C:\maven\apache-maven-3.0.5\bin\.."/>
+    <property name="file.separator" value="\"/>
     <property name="java.vendor.url.bug" value="http://java.sun.com/cgi-bin/bugreport.cgi"/>
     <property name="sun.cpu.endian" value="little"/>
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
-    <property name="sun.desktop" value="gnome"/>
-    <property name="sun.cpu.isalist" value=""/>
+    <property name="sun.desktop" value="windows"/>
+    <property name="sun.cpu.isalist" value="amd64"/>
   </properties>
-  <testcase time="0.004" classname="org.intel.im.analytics.hiveudfs.AppTest" name="testApp"/>
+  <testcase time="0" classname="org.intel.im.analytics.hiveudfs.AppTest" name="testApp"/>
 </testsuite>

@@ -26,7 +26,10 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.DoubleObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.LongObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspector;
+import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.LongWritable;
+
 import net.sf.uadetector.service.UADetectorServiceFactory;
 import net.sf.uadetector.ReadableUserAgent;
 import net.sf.uadetector.UserAgent;
@@ -34,7 +37,7 @@ import net.sf.uadetector.UserAgentStringParser;
 
 /**
  *
- * @author Lilun
+ * @author Lilun Cheng, Intel Corporation - Intel Media
  */
 @Description(name = "user agent parser",
     value = "_FUNC_(array(struct1,struct2,...), string myfield) - "
@@ -47,8 +50,8 @@ public class userAgentParser extends GenericUDF {
     protected ObjectInspector[] argumentOIs;
     private ArrayList ret;
     
-    LongObjectInspector loi;
-    LongObjectInspector elOi;
+    StringObjectInspector loi;
+    StringObjectInspector elOi;
  
     @Override
     public ObjectInspector initialize(ObjectInspector[] ois) throws UDFArgumentException {
@@ -61,26 +64,26 @@ public class userAgentParser extends GenericUDF {
     	          + " but " + ois[0].getTypeName() + " is found");
     }
     
-    if(ois.length != 2 ) {
-        throw new UDFArgumentException("2 arguments needed, found " + ois.length );
+    if(ois.length != 1 ) {
+        throw new UDFArgumentException("1 argument needed, found " + ois.length );
     }
     
-    loi = ((LongObjectInspector)ois[0]);
-    elOi = ((LongObjectInspector)ois[1]);
+    loi = ((StringObjectInspector)ois[0]);
+   // elOi = ((StringObjectInspector)ois[1]);
     
     ret = new ArrayList();    
     ArrayList structFieldNames = new ArrayList();
     ArrayList structFieldObjectInspectors = new ArrayList();
 
-    structFieldNames.add("starttime");
-    structFieldNames.add("endtime");
-    structFieldNames.add("viewedtime");
+    structFieldNames.add("os_type");
+    structFieldNames.add("browser_type");
+    structFieldNames.add("device_type");
  
 
     // To get instances of PrimitiveObjectInspector, we use the PrimitiveObjectInspectorFactory
-    structFieldObjectInspectors.add( PrimitiveObjectInspectorFactory.writableLongObjectInspector);
-    structFieldObjectInspectors.add( PrimitiveObjectInspectorFactory.writableLongObjectInspector);
-    structFieldObjectInspectors.add( PrimitiveObjectInspectorFactory.writableLongObjectInspector);
+    structFieldObjectInspectors.add( PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+    structFieldObjectInspectors.add( PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+    structFieldObjectInspectors.add( PrimitiveObjectInspectorFactory.writableStringObjectInspector);
     
 
     // Set up the object inspector for the struct<> for the output
@@ -98,37 +101,33 @@ public class userAgentParser extends GenericUDF {
     @Override
     public Object evaluate(DeferredObject[] dos) throws HiveException {
     // get list
-    if(dos==null || dos.length != 2) {
+    if(dos==null || dos.length != 1) {
         throw new HiveException("received " + (dos == null? "null" :
-            Integer.toString(dos.length) + " elements instead of 2"));
+            Integer.toString(dos.length) + " elements instead of 1"));
     }
-    	
-      long strt_val =  (Long) loi.getPrimitiveJavaObject(dos[0].get());
-      long end_val = (Long) elOi.getPrimitiveJavaObject(dos[1].get());
-      long view_val = 0;
+    Object[] rtrn_set;
+/***    
+      String user_agent_info =  (String) loi.getPrimitiveJavaObject(dos[0].get());
+      UserAgentStringParser parser = UADetectorServiceFactory.getResourceModuleParser();
+      ReadableUserAgent agent = parser.parse(user_agent_info);
       
-      long startBckt = strt_val - strt_val % (60 * 1000);
-      long endBckt = end_val - end_val % (60 * 1000);
-      
-      Object[] rtrn_set;
 
       ret = new ArrayList();
-      
-      do{
-    	  rtrn_set = new Object[3];
-    	  rtrn_set[0] =  new LongWritable(startBckt);
-    	  rtrn_set[1] =  new LongWritable(startBckt + (60 * 1000));
-      
-    	  if(end_val > startBckt + (60 * 1000)){
-    		  rtrn_set[2] =  new LongWritable(startBckt + (60 * 1000) - strt_val);
-    	  }else{
-    		  rtrn_set[2] =  new LongWritable(end_val - strt_val);
-    	  }
-    	  ret.add(rtrn_set);
-    	  startBckt = startBckt + (60 * 1000);
-    	  strt_val = startBckt;
-      }while(end_val > startBckt);
-    return ret;
+      rtrn_set = new Object[3];
+      rtrn_set[0] =  new String(agent.getOperatingSystem().getName());
+      rtrn_set[1] =  new String(agent.getFamily().getName());
+      rtrn_set[2] =  new String(agent.getDeviceCategory().getName());
+     
+    return rtrn_set;
+    ****/
+
+    rtrn_set = new Object[3];
+	rtrn_set[0] =  new String("600");
+	rtrn_set[1] =  new String("600");
+	rtrn_set[2] =  new String("600");
+	ret = new ArrayList();
+	ret.add(rtrn_set);
+	return ret;
     }
  
 	@Override

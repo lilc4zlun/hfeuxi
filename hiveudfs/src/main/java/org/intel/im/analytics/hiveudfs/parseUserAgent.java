@@ -18,7 +18,7 @@ public class parseUserAgent {
 		 System.out.println(agent.getTypeName());
 		 System.out.println(agent.getUrl());
 		 System.out.println(agent.getVersionNumber());
-		 System.out.println(agent.getDeviceCategory());
+		 System.out.println(agent.getDeviceCategory().getName());
 		 
 	 }
 
