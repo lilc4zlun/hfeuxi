@@ -27,23 +27,24 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.DoubleObjectInspe
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.LongObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspector;
-import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
 
 import net.sf.uadetector.service.UADetectorServiceFactory;
 import net.sf.uadetector.ReadableUserAgent;
 import net.sf.uadetector.UserAgent;
 import net.sf.uadetector.UserAgentStringParser;
+ 
 
 /**
  *
- * @author Lilun Cheng, Intel Corporation - Intel Media
+ * @author Lilun Cheng
  */
-@Description(name = "user agent parser",
+@Description(name = "array_struct_sort",
     value = "_FUNC_(array(struct1,struct2,...), string myfield) - "
-    + "returns the passed array struct which gives brower, OS information " ,
+    + "returns the passed array struct, ordered by the given field  " ,
     extended = "Example:\n"
-    + "  > SELECT _FUNC_(user_agent) FROM src LIMIT 1;\n"
+    + "  > SELECT _FUNC_(str, 'myfield') FROM src LIMIT 1;\n"
     + " 'b' ")
 
 public class userAgentParser extends GenericUDF {
@@ -51,7 +52,6 @@ public class userAgentParser extends GenericUDF {
     private ArrayList ret;
     
     StringObjectInspector loi;
-    StringObjectInspector elOi;
  
     @Override
     public ObjectInspector initialize(ObjectInspector[] ois) throws UDFArgumentException {
@@ -65,11 +65,10 @@ public class userAgentParser extends GenericUDF {
     }
     
     if(ois.length != 1 ) {
-        throw new UDFArgumentException("1 argument needed, found " + ois.length );
+        throw new UDFArgumentException("1 arguments needed, found " + ois.length );
     }
     
     loi = ((StringObjectInspector)ois[0]);
-   // elOi = ((StringObjectInspector)ois[1]);
     
     ret = new ArrayList();    
     ArrayList structFieldNames = new ArrayList();
@@ -77,10 +76,16 @@ public class userAgentParser extends GenericUDF {
 
     structFieldNames.add("os_type");
     structFieldNames.add("browser_type");
+    structFieldNames.add("version_info");
+    structFieldNames.add("producer_info");
+    structFieldNames.add("producer_url");
     structFieldNames.add("device_type");
  
 
     // To get instances of PrimitiveObjectInspector, we use the PrimitiveObjectInspectorFactory
+    structFieldObjectInspectors.add( PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+    structFieldObjectInspectors.add( PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+    structFieldObjectInspectors.add( PrimitiveObjectInspectorFactory.writableStringObjectInspector);
     structFieldObjectInspectors.add( PrimitiveObjectInspectorFactory.writableStringObjectInspector);
     structFieldObjectInspectors.add( PrimitiveObjectInspectorFactory.writableStringObjectInspector);
     structFieldObjectInspectors.add( PrimitiveObjectInspectorFactory.writableStringObjectInspector);
@@ -96,8 +101,6 @@ public class userAgentParser extends GenericUDF {
     return li2;
     }
  
-    // to sort a list , we must supply our comparator
-
     @Override
     public Object evaluate(DeferredObject[] dos) throws HiveException {
     // get list
@@ -105,29 +108,23 @@ public class userAgentParser extends GenericUDF {
         throw new HiveException("received " + (dos == null? "null" :
             Integer.toString(dos.length) + " elements instead of 1"));
     }
-    Object[] rtrn_set;
-/***    
-      String user_agent_info =  (String) loi.getPrimitiveJavaObject(dos[0].get());
+    	
+      String user_agent_info =  (String) loi.getPrimitiveJavaObject(dos[0].get()).replace('+', ' ');
       UserAgentStringParser parser = UADetectorServiceFactory.getResourceModuleParser();
       ReadableUserAgent agent = parser.parse(user_agent_info);
       
-
+      Object[] rtrn_set;
       ret = new ArrayList();
-      rtrn_set = new Object[3];
-      rtrn_set[0] =  new String(agent.getOperatingSystem().getName());
-      rtrn_set[1] =  new String(agent.getFamily().getName());
-      rtrn_set[2] =  new String(agent.getDeviceCategory().getName());
-     
-    return rtrn_set;
-    ****/
-
-    rtrn_set = new Object[3];
-	rtrn_set[0] =  new String("600");
-	rtrn_set[1] =  new String("600");
-	rtrn_set[2] =  new String("600");
-	ret = new ArrayList();
-	ret.add(rtrn_set);
-	return ret;
+      rtrn_set = new Object[6];
+      rtrn_set[0] = new Text(agent.getOperatingSystem().getName());
+      rtrn_set[1] = new Text(agent.getFamily().getName());
+      rtrn_set[2] = new Text(agent.getVersionNumber().toString());
+      rtrn_set[3] = new Text(agent.getProducer());
+      rtrn_set[4] = new Text(agent.getProducerUrl());
+      rtrn_set[5] = new Text(agent.getDeviceCategory().getName());
+      ret.add(rtrn_set);
+      
+    return ret;
     }
  
 	@Override
