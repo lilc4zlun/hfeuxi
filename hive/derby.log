@@ -1,20 +1,40 @@
 ----------------------------------------------------------------
-2013-12-09 05:04:57.364 GMT:
- Booting Derby version The Apache Software Foundation - Apache Derby - 10.4.2.0 - (689064): instance a816c00e-0142-d5be-70e3-0000033c78e8
-on database directory /home/cloudera/hfeuxi/hive/TempStatsStore  
+2013-12-15 02:27:58.149 GMT:
+ Booting Derby version The Apache Software Foundation - Apache Derby - 10.4.2.0 - (689064): instance a816c00e-0142-f414-df0a-0000031c66c8
+on database directory /home/cloudera/workspace/hfeuxi/hive/TempStatsStore  
 
 Database Class Loader started - derby.database.classpath=''
 
-2013-12-09 05:04:57.687 GMT:
-Shutting down instance a816c00e-0142-d5be-70e3-0000033c78e8
+2013-12-15 02:27:58.495 GMT:
+Shutting down instance a816c00e-0142-f414-df0a-0000031c66c8
 ----------------------------------------------------------------
 ----------------------------------------------------------------
-2013-12-09 05:05:20.998 GMT:
- Booting Derby version The Apache Software Foundation - Apache Derby - 10.4.2.0 - (689064): instance 08264012-0142-d5be-70e3-0000033c78e8
-on database directory /home/cloudera/hfeuxi/hive/TempStatsStore  
+2013-12-15 02:36:34.156 GMT:
+ Booting Derby version The Apache Software Foundation - Apache Derby - 10.4.2.0 - (689064): instance 08264012-0142-f414-df0a-0000031c66c8
+on database directory /home/cloudera/workspace/hfeuxi/hive/TempStatsStore  
 
 Database Class Loader started - derby.database.classpath=''
 
-2013-12-09 05:05:22.009 GMT:
-Shutting down instance 08264012-0142-d5be-70e3-0000033c78e8
+2013-12-15 02:36:34.595 GMT:
+Shutting down instance 08264012-0142-f414-df0a-0000031c66c8
+----------------------------------------------------------------
+----------------------------------------------------------------
+2013-12-15 02:46:22.849 GMT:
+ Booting Derby version The Apache Software Foundation - Apache Derby - 10.4.2.0 - (689064): instance e03f4017-0142-f414-df0a-0000031c66c8
+on database directory /home/cloudera/workspace/hfeuxi/hive/TempStatsStore  
+
+Database Class Loader started - derby.database.classpath=''
+
+2013-12-15 02:46:22.924 GMT:
+Shutting down instance e03f4017-0142-f414-df0a-0000031c66c8
+----------------------------------------------------------------
+----------------------------------------------------------------
+2013-12-15 02:46:49.978 GMT:
+ Booting Derby version The Apache Software Foundation - Apache Derby - 10.4.2.0 - (689064): instance 2057c01b-0142-f414-df0a-0000031c66c8
+on database directory /home/cloudera/workspace/hfeuxi/hive/TempStatsStore  
+
+Database Class Loader started - derby.database.classpath=''
+
+2013-12-15 02:46:50.175 GMT:
+Shutting down instance 2057c01b-0142-f414-df0a-0000031c66c8
 ----------------------------------------------------------------
