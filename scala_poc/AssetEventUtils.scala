@@ -1,0 +1,489 @@
+package com.intel.media.bi
+
+import java.util.NoSuchElementException
+import scala.Some
+
+import org.apache.avro.generic.GenericRecord
+import org.apache.avro.Schema
+import org.joda.time.format.DateTimeFormat
+
+import com.intel.media.bi.AssetEventUtils.AssetEvent.AssetEvent
+import com.intel.media.bi.PixelEventUtils._
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: pennyesx
+ * Date: 9/18/13
+ * Time: 12:40 PM
+ * To change this template use File | Settings | File Templates.
+ */
+object AssetEventUtils {
+  val AssetSessionEndEvent = "AssetTunedEnd"
+  val OnNowPointFormat = DateTimeFormat.forPattern("EEE MMM dd yyyy HH:mm:ss 'GMT'Z")
+  val NumericValueRegex = """[0-9]+""".r
+  val OnNowPointBadRegex = """([MTWTFS][a-z]{2} [JFMASOND][a-z]{2} [0-2][0-9] 2[0-9]{3} [012][0-9]:[0-5][0-9]:[0-5][0-9] GMT[+-]*[0-9]{4}) \([A-Z]+\)""".r
+
+  def stripTimeZone(onNowPointString:String):String = {
+    onNowPointString.substring(0, onNowPointString.indexOf('(')-1)
+  }
+
+  def isFieldPresent(event: GenericRecord, field: AssetEventField.AssetEventField): Boolean = {
+    PixelEventUtils.isFieldPresent(event, field.toString)
+  }
+
+  def isFieldPresent(event: Map[String, Any], field: AssetEventField.AssetEventField): Boolean = {
+    PixelEventUtils.isFieldPresent(event, field.toString)
+  }
+
+  def eventSort (e1: Map[String, Any], e2: Map[String, Any]): Boolean = {
+    val e1EventData = getEventData(e1)
+    val e2EventData = getEventData(e2)
+    // first try to sort by deviceTimestamp - should've already thrown out any rows without deviceTs
+    val e1ts = e1EventData.get(AssetEventField.deviceTimestamp.toString) match {
+      case Some(d:Double) => d.toLong
+      case Some(l:Long) => l
+      case Some(i:Int) => i.toLong
+    }
+    val e2ts = e2EventData.get(AssetEventField.deviceTimestamp.toString) match {
+      case Some(d:Double) => d.toLong
+      case Some(l:Long) => l
+      case Some(i:Int) => i.toLong
+    }
+    if (e1ts < e2ts) true
+    else if(e2ts < e1ts) false
+    else {
+      // next try to sort start events first and end events last
+      val e1Event = getSchemaProperty(e1, SchemaProperty.name)
+      val e2Event = getSchemaProperty(e2, SchemaProperty.name)
+      if((e1Event == AssetEvent.AssetTunedEvent.toString && e2Event != AssetEvent.AssetTunedEvent.toString) ||
+        (e2Event == AssetEvent.AssetTunedEnd.toString && e1Event != AssetEvent.AssetTunedEnd.toString)) true
+      else if((e2Event == AssetEvent.AssetTunedEvent.toString && e1Event != AssetEvent.AssetTunedEvent.toString) ||
+        (e1Event == AssetEvent.AssetTunedEnd.toString && e2Event != AssetEvent.AssetTunedEnd.toString)) false
+      else {
+        // try to sort by serviceTimestamp, or leave order intact
+        val e1sts = e1EventData.get(AssetEventField.serviceTimestamp.toString) match {
+          case Some(d:Double) => d.toLong
+          case Some(l:Long) => l
+          case Some(i:Int) => i.toLong
+        }
+        val e2sts = e2EventData.get(AssetEventField.serviceTimestamp.toString) match {
+          case Some(d:Double) => d.toLong
+          case Some(l:Long) => l
+          case Some(i:Int) => i.toLong
+        }
+        if (e2sts < e1sts) false
+        else true
+      }
+    }
+  }
+
+  def getEventType(event: Map[String, Any]): AssetEvent = {
+    try {
+      AssetEvent.withName(getSchemaProperty(event, SchemaProperty.name))
+    } catch {
+      case e:NoSuchElementException => null
+    }
+  }
+
+  def getEventType(event:GenericRecord): AssetEvent = {
+    try {
+      AssetEvent.withName(event.getSchema.getName)
+    } catch {
+      case e:NoSuchElementException => null
+    }
+  }
+
+  def getEventFieldString(event:GenericRecord, field:AssetEventField.AssetEventField):String = {
+    PixelEventUtils.getEventFieldString(event, field.toString)
+  }
+
+  def getEventFieldString(event: Map[String, Any], field: AssetEventField.AssetEventField): String = {
+    PixelEventUtils.getEventFieldString(getEventData(event), field.toString)
+  }
+
+  def getEventFieldNumeric(event: Map[String, Any], numericField: AssetEventField.AssetEventField): Option[Double] = {
+    PixelEventUtils.getEventFieldNumeric(getEventData(event), numericField.toString)
+  }
+
+  def getEventFieldDateString(event: Map[String, Any], dateField: AssetEventField.AssetEventField): String = {
+    PixelEventUtils.getEventFieldDateString(event, dateField.toString)
+  }
+
+  def getLiveTuneType(event: Map[String, Any]): LiveTuneType.LiveTuneType = {
+    try {
+      LiveTuneType.withName(getEventFieldString(event, AssetEventField.liveTuneType))
+    } catch {
+      case e:NoSuchElementException => null
+    }
+  }
+  
+/*
+ * Name:  	findSection
+ * Inputs: 
+ * 			startList: List of starting points of continuous sections  It is a list of tuples.
+ *                     startList(*)._1 : device times of the asset event which has that starting point 
+ *                     startList(*)._2: the time of that starting point. For example, if AssetTunedEvent, it will be current watch point
+ *                     startList(*)._3: live tune type, such as Time-Shift, Catch-up and On-Now
+ *                     startList(*)._4: program end time.  It is used to split continuous section if it crosses from time shift to catch up.
+ *           endList:  List of ending points of continuous sections.  It is a list of tuples          
+ *                     endList(*)._1 : device times of the asset event which has that ending point 
+ *                     endList(*)._2: the time of that ending point. For example, if AssetTunedEnd, it will be current watch point
+ *                     endList(*)._3: live tune type, such as Time-Shift, Catch-up and On-Now
+ *                     endList(*)._4: program end time.  It is used to split continuous section if it crosses from time shift to catch up.
+ *         returnList: return list of continuous sections
+ *                     returnList(*)._1: starting point of the continuous section
+ *                     returnList(*)._2: ending point of the continuous section
+ *                     returnList(*)._3: Live tune type, such as Time-Shift, Catch-up and On-Now
+ * Output:  returnList
+ */
+
+def findSection(startList:List[Tuple4[Long, Long, String, Long]], endList:List[Tuple4[Long, Long, String, Long]], returnList:List[Tuple3[Long, Long, String]]): List[Tuple3[Long, Long, String]] = {
+  if(startList.isEmpty) return returnList
+  if(endList.isEmpty) return returnList
+/*
+ * if the start point device time bigger than end point device time, skip.
+ * This shouldn't happen since the records were pre-sorted unless some records missing.
+ */
+  if(startList(0)._1 < endList(0)._1){
+/* If the start point device tm < program end tm and end point 
+ * device tm > program end tm and it runs under time-shift mode, that 
+ * section needs to be splited  
+ */
+       if((startList(0)._1  < startList(0)._4) && 
+          (endList(0)._1 > startList(0)._4)
+         ){
+	  findSection( 
+		startList.tail,
+            	endList.tail,
+            	returnList :::
+/*
+ * The left splited section will be on time-shift.  The end point = start point + the time
+ * difference between time when program is ended and the device time which triggers the start
+ * of the section.  For example, if a tv live, from 8 to 9 and user into time shift mode (press
+ * resume @ 8:20 device time).  The time sift duration will be from 8:20 to 9:00.
+ * Use device tm is as close as we can get to approx timeshift/catch up split
+* 
+*/
+			List((	startList(0)._2,
+              			startList(0)._2  + (startList(0)._4 - startList(0)._1),
+				"Time-Shift")
+                            ) 
+			:::
+/* the other part will be catch up
+ * 
+ */
+			List(	(startList(0)._2 + (startList(0)._4 - startList(0)._1),
+              			endList(0)._2,
+	      			"Catch-up")
+		     	     )	 
+            		
+		      )
+         }
+    	else{
+/*    	  
+ * Sometimes, for example, many fast forwards, possible the tricker start of 1 FF is a couple mil sec earlier than
+ * previous FF tricker end. Make them equal in this case.  In other case, if a very bad data, it will
+ * hide the bad data and not skew the report.  We have other DQ report which will revealthe issue.
+ * 
+*/
+	    if ((endList(0)._2 - startList(0)._2) < 0){
+		findSection( startList.tail,
+             		 endList.tail,
+            		 returnList
+                        )
+	    }
+            else{
+    	    findSection( startList.tail,
+             		 endList.tail,
+            		 returnList ::: 
+				List((startList(0)._2,
+              		 	      endList(0)._2,
+	      		              startList(0)._3
+	                             ))   
+                        )
+            }
+         }
+    }
+     else{
+       		findSection(startList, endList.tail, returnList)
+	}
+}
+
+
+/*
+ * Name: getEventTime
+ * Inputs: 
+ *      assetType: 	such as VodAsset (recorded video) and LinearAsset (currently on live stream)
+ * 		eventType: 	this is used to determine which event field for each event needs to be considered as start or end point of a section
+ *                  for example, AssetTunedEvent can only be considered as start point of a section.  AssetTunedEnd can only be considered as end point
+ *                  of a section.  For detail logic on how each start and end points defined, see
+ *                  https://onbrand.atlassian.net/wiki/display/RA/VideoConsumptionSummarizerJob#VideoConsumptionSummarizerJob-DurationLogic
+ *      event:  	event data.
+ *      pointType: 	depending on start or end point, events and fields usages are different
+ */
+def getEventTime(assetType:String, eventType:String, event:Map[String, Any], pointType:String) : Long = eventType match 
+{
+
+/* For rewind and forward events, the tricker start is the end of a normal speed section
+ * tricker end is the start of the next normal speed section 
+ */
+  case "AssetTuneRewindEvent" | "AssetTuneForwardEvent" => 
+	(if(pointType == "start") 
+	     getEventFieldNumeric(event, AssetEventField.trickEndPoint).get.toLong
+         else  
+           getEventFieldNumeric(event, AssetEventField.trickStartPoint).get.toLong
+         )
+/*
+ * For start over event, if linear asset, the program start time is the start of the next normal speed section.
+ * For VOD, it will be 0
+ * For LinearAsset, the program start time + the startOverPoint is where the end of the previous normal speed section
+ * For VOD, the start over point is the end of the previous normal speed section
+*/
+  case "AssetStartOverEvent" =>
+        (if ((assetType == "LinearAsset") && (pointType == "start"))
+          getEventFieldNumeric(event, AssetEventField.programStartTime).get.toLong
+         else if
+            ((assetType == "LinearAsset") && (pointType == "end")) 
+           getEventFieldNumeric(event, AssetEventField.startOverPoint).get.toLong +
+           getEventFieldNumeric(event, AssetEventField.programStartTime).get.toLong
+	else if
+	    ((assetType == "VodAsset") && (pointType == "start")) 
+		0
+         else
+         getEventFieldNumeric(event, AssetEventField.startOverPoint).get.toLong
+	)
+
+/*
+ * AssetTunedEvent's currentWatchPoint is the start of the normal play speed section. 
+ * Has nothing to do with the end of a normal speed section
+ */
+
+  case "AssetTunedEvent" =>  
+	(if(pointType == "start"){ 
+	       if(
+	          AssetEventUtils.isFieldPresent(event, AssetEventField.currentWatchPoint)
+	         )  
+		      getEventFieldNumeric(event, AssetEventField.currentWatchPoint).get.toLong
+               else
+         getEventFieldNumeric(event, AssetEventField.deviceTimestamp).get.toLong
+         }
+         else 
+	     	-1 
+         )                                                                                   
+   
+/*
+ * AssetTunedEnd's currentWatchpoint is the end of a normal play speed section.
+ * Has nothing to do with the start of a section
+ */
+ 		
+  case "AssetTunedEnd" =>  
+	(if(pointType == "end") 
+	     getEventFieldNumeric(event, AssetEventField.currentWatchPoint).get.toLong
+         else 
+	     	-1  
+         )    
+
+/*
+ * AssetTuneResumeEvent's startPoint is the start point of a normal play speed section
+ */
+
+  case "AssetTuneResumeEvent" =>
+	(if((pointType == "start"))
+		getEventFieldNumeric(event, AssetEventField.startPoint).get.toLong
+         else 
+	     	-1  
+         )
+/*
+ * AssetTunePauseEvent's stopPoint is the end point of a normal play speed section
+ */
+         
+  case "AssetTunePauseEvent" =>
+	(if((pointType == "end"))
+	     getEventFieldNumeric(event, AssetEventField.stopPoint).get.toLong
+         else 
+	     	-1 
+         )
+					   
+  case _ => -1
+}
+
+/*
+ * Name: isValidAssetTunedEvent
+ * Input:  eventList - is sorted event list by device start time stamp.  For now, we just check
+ * if the 1st element is AssetTunedEvent.  If yes, return true, else, return false
+ */
+
+def isValidAssetTunedEvent(eventList: List[Map[String, Any]]) : Boolean = {
+  val fstEvent = eventList(0)
+  if((getSchemaProperty(fstEvent, SchemaProperty.name) == AssetEvent.AssetTunedEvent.toString) && (AssetEventUtils.isFieldPresent(fstEvent, AssetEventField.currentWatchPoint))){
+     if((((getEventFieldString(fstEvent,AssetEventField.assetType) == "LinearAsset") && getEventFieldNumeric(fstEvent, AssetEventField.currentWatchPoint).get.toLong > 0)
+         || 
+         (getEventFieldString(fstEvent,AssetEventField.assetType) == "VodAsset" && getEventFieldNumeric(fstEvent, AssetEventField.currentWatchPoint).get.toLong >= 0))){
+        true
+     }
+     else
+       false
+  }
+  else 
+    false    
+}
+
+/*
+ * Name:  	getSortedSection
+ * Inputs:
+ *     		eventList: a list of asset events for a given asset session id, sorted by device time stamps
+ * Output: 	a list of continuous sections (see  sumVideoStreamDistinctDuration for the definition of section)
+ * Logic:   Step1: find starting points of continuous sections.
+ *          Step2: find ending points of continuous sections.
+ *          Step3: Call findSection to construct continuous sections by linking start and end points
+ * Assumptions:
+ *          1) Input is a list of Asset Events sorted by device times
+ *          2) These asset events are within the same asset session id & device id 
+ */
+def getSortedSection(eventList: List[Map[String, Any]]) : List[Tuple3[Long, Long, String]]  = {   
+  val events = 
+    /* for now, we only process the following events which will impact durations.
+     * We may eventually consider other events, such as AsseStillTune
+     */
+	  eventList.filter(p => (getSchemaProperty(p, SchemaProperty.name) == AssetEvent.AssetTuneResumeEvent.toString ||
+                             getSchemaProperty(p, SchemaProperty.name) == AssetEvent.AssetTunePauseEvent.toString ||
+                             getSchemaProperty(p, SchemaProperty.name) == AssetEvent.AssetTunedEnd.toString||
+                             getSchemaProperty(p, SchemaProperty.name) == AssetEvent.AssetTunedEvent.toString||
+                             getSchemaProperty(p, SchemaProperty.name) == AssetEvent.AssetStartOverEvent.toString ||
+                             getSchemaProperty(p, SchemaProperty.name) == AssetEvent.AssetTuneRewindEvent.toString||
+                             getSchemaProperty(p, SchemaProperty.name) == AssetEvent.AssetTuneForwardEvent.toString
+                             )
+                      )
+  if(isValidAssetTunedEvent(eventList)) 
+    findSection(
+    (/* 1st step is to figure out all the start points of these sections.  Very important that inputs to this 
+      * method is sorted by device date time and assume no 2 events will have same device time stamp for a give asset session id
+      * if they are the same, assume the code has some kind of priority logic
+     */
+     for (event <- events) yield {
+        (getEventFieldNumeric(event, AssetEventField.deviceTimestamp).get.toLong,
+         getEventTime(getEventFieldString(event,AssetEventField.assetType), event("name").toString, event, "start"),
+         getEventFieldString(event,AssetEventField.liveTuneType),
+         getEventFieldNumeric(event, AssetEventField.programEndTime).get.toLong
+        )
+      }
+     ).filter(x => x._2 != -1),
+	 (
+       /*2nd step is to figure out the end point of these sections
+        */
+       for (event <- events) yield {
+         (getEventFieldNumeric(event, AssetEventField.deviceTimestamp).get.toLong,
+          getEventTime(getEventFieldString(event,AssetEventField.assetType), event("name").toString, event, "end"),
+		  getEventFieldString(event,AssetEventField.liveTuneType),
+		  getEventFieldNumeric(event, AssetEventField.programEndTime).get.toLong
+          )
+       }
+      /*filter out records which are no needed.  For example, AssetTunedEnd is not used for providing data for the start point of each section
+       */
+      ).filter(x => x._2 != -1),
+	  List()
+   ).sortBy(f => f._1)
+  else
+    /*if data violate contracts, zero out records
+     */
+    List((0, 0, getEventFieldString(eventList(0),AssetEventField.liveTuneType)))
+}
+
+/*
+ * Name: sumVideoStreamDuration
+ * Inputs: 	
+ * 		sectionList: See the detail description under sumVideoStreamDistinctDuration.  Same definition
+ *      cSum:		 Holds the cumulative sum of durations from each sections which includes repeated watching times caused by rewind, start over etc.
+ *  Outputs: Total sum of durations of sections which includes repeated watching times caused by rewind, start over etc.
+ */
+def sumVideoStreamDuration(sectionList:List[Tuple3[Long, Long, String]], cSum:Long) : Long = {
+        if(sectionList.isEmpty) return cSum
+        else
+          sumVideoStreamDuration(sectionList.tail, cSum + (sectionList(0)._2 - sectionList(0)._1))
+      }
+
+/*
+ * Name: sumVideoStreamDistinctDuration
+ * Inputs:
+ * 		sectionList: A list of sections sorted by the times of the starting points.  A section is a continuous time when a user watches TV program @ normal speed.
+ *                   For example, a user starts watch a program, an event, AssetTunedEvent's current watch point indicates the time within the program where user starts watching
+ *                   When user presses fast forward, an event AssetTuneForwardEvent's trick start indicates the time within the program where the user stops watching TV using normal speed.
+ *                   The 1st section is constructed using current watch point from AssetTunedEvent (starting point) and trick start from AssetTuneForwardEvent (ending point)
+ *                   For detail logic on how each start and end points defined, see
+ *                   https://onbrand.atlassian.net/wiki/display/RA/VideoConsumptionSummarizerJob#VideoConsumptionSummarizerJob-DurationLogic
+ *                   sectionList_1: starting point of a section
+ *                   sectionList_2: ending point of a section
+ *                   sectionList_3: live tune type: On-Now, Catch Up or Time shift.
+ *      cTime: 		 A variable which tracks of the latest end point time from the sections which have been just processed.  It is a temporary variable which is used to determine if we
+ *             		 need to add all the duration, or portion of the duration or nothing from the next section which needs to be processed, depending the relative positions between 
+ *                   cTime and the section which function is currently processing.             
+ *      cSum:        This variable holds the distinct duration results.             
+ * Output: Distinct duration, a total time users watch TV program minus repeated watching caused by Rewind, Start over etc.     
+ * Assumption: sectionList has to be sorted by the times of the starting points.                   
+ * Logic does left to right sweep and calculate distinct durations and add duration depending positions of start, end points and cTime
+*/
+def sumVideoStreamDistinctDuration(sectionList:List[Tuple3[Long, Long, String]], cTime:Long, cSum:Long) : Long = {
+        if(sectionList.isEmpty) return cSum
+        if(cTime <= sectionList(0)._1)
+          sumVideoStreamDistinctDuration(sectionList.tail, sectionList(0)._2, cSum + (sectionList(0)._2 - sectionList(0)._1))
+        else if(cTime < sectionList(0)._2)
+          sumVideoStreamDistinctDuration(sectionList.tail, sectionList(0)._2, cSum + (sectionList(0)._2 - cTime))
+        else
+          sumVideoStreamDistinctDuration(sectionList.tail, cTime, cSum)
+}
+
+  object AssetEvent extends Enumeration {
+    type AssetEvent = Value
+    val AssetTunedEvent,
+      AssetPlaybackBitrateEvent,
+      AssetStillTunedEvent,
+      AssetStartOverEvent,
+      AssetCommercialBreakStartEvent,
+      AssetCommercialBreakEndEvent,
+      AssetTuneForwardEvent,
+      AssetTuneRewindEvent,
+      AssetTunePauseEvent,
+      AssetTuneResumeEvent,
+      AssetTunedEnd = Value
+  }
+
+  object AssetEventField extends Enumeration {
+    type AssetEventField = Value
+    val assetSessionId,       // most or all events
+      deviceTimestamp,
+      serviceTimestamp,
+      sessionId,
+      programStartTime,
+      programEndTime,
+      accountId,
+      deviceId,
+      progId,
+      assetId,
+      cid,                    // channel id
+      profileId,
+      assetType,              // linear or vod
+      contentType,            // e.g. TV
+      deviceType,             // model no?
+      liveTuneType,           // on-now, timeshifted, or catch-up
+      onNowPoint,             // current live point (should be roughly equivalent to deviceTimestamp for on-now or timeshifted)
+      currentWatchPoint,      // current play point
+      videoBitrate,           // playback bitrate
+      audioBitrate,
+      bandwidthEstimate,
+      cdnUrl,
+      startOverPoint,         // start over
+      currentLiveBookmark,    // tuned
+      trickStartPoint,        // forward and rewind
+      trickEndPoint,
+      startPoint,             // forward, rewind, resume
+      stopPoint,              // pause
+      playTime = Value        // tuned end
+  }
+
+  object LiveTuneType extends Enumeration {
+    type LiveTuneType = Value
+    val onNow = Value("On-now")
+    val timeShifted = Value("On-now_TimeShifted")
+    val catchUp = Value("Catch-up")
+  }
+}
