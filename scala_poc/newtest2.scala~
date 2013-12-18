@@ -50,9 +50,9 @@ Total distinct stream duration -> 5000
 /**** Basic time shift duration test case 2 ***/
 val m1 = Map("profileId" -> "26386", "ip" -> "99.111.73.147", "deviceTimestamp" -> "10000", "currentWatchPoint" -> "10000", "liveTuneType" -> "On-now", "programEndTime" -> "25000", "assetType" -> "LinearAsset")
 val m2 = Map("profileId" -> "26386", "ip" -> "99.111.73.147", "deviceTimestamp" -> "11000", "stopPoint" -> "11000", "liveTuneType" -> "On-now", "programEndTime" -> "25000")
-val m3 = Map("profileId" -> "26386", "ip" -> "99.111.73.147", "deviceTimestamp" -> "12000", "startPoint" -> "11000", "liveTuneType" -> "Time-Shift", "programEndTime" -> "25000")
-val m4 = Map("profileId" -> "26386", "ip" -> "99.111.73.147", "deviceTimestamp" -> "12500", "trickStartPoint" -> "11500", "trickEndPoint" -> "16000", "liveTuneType" -> "On-now", "programEndTime" -> "25000")
-val m5 = Map("profileId" -> "26386", "ip" -> "99.111.73.147", "deviceTimestamp" -> "16500", "currentWatchPoint" -> "16500", "liveTuneType" -> "On-now", "programEndTime" -> "25000")
+val m3 = Map("profileId" -> "26386", "ip" -> "99.111.73.147", "deviceTimestamp" -> "26000", "startPoint" -> "11000", "liveTuneType" -> "Time-Shift", "programEndTime" -> "25000")
+//val m4 = Map("profileId" -> "26386", "ip" -> "99.111.73.147", "deviceTimestamp" -> "12500", "trickStartPoint" -> "11500", "trickEndPoint" -> "16000", "liveTuneType" -> "On-now", "programEndTime" -> "25000")
+val m5 = Map("profileId" -> "26386", "ip" -> "99.111.73.147", "deviceTimestamp" -> "27000", "currentWatchPoint" -> "25000", "liveTuneType" -> "Catch-up", "programEndTime" -> "25000")
 
 val  events_simple_timesift_case_1 = List(
                     	Map( "namespace" -> "intelmedia.ws.ceventsent", 
@@ -70,20 +70,12 @@ val  events_simple_timesift_case_1 = List(
                                              "event.version" -> "0.0.6", 
                                              "eventData" -> m3
                                  ),
-                        Map(      "namespace" -> "intelmedia.ws.ceventsent", 
-                                             "name" -> "AssetTuneForwardEvent", 
-                                             "event.version" -> "0.0.6", 
-                                             "eventData" -> m4
-                                 )
-/***
-			,
 
               		Map(       "namespace" -> "intelmedia.ws.ceventsent", 
                                              "name" -> "AssetTunedEnd", 
                                              "event.version" -> "0.0.6", 
                                              "eventData" -> m5
                            )
-****/
                  
                        )
 /*****/

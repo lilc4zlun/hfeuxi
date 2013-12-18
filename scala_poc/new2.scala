@@ -1,9 +1,14 @@
 object AssetEventProcess extends Enumeration {
     type AssetEventProcess = Value
     val Process,
-      	Discard,
+    	Discard,
+    	DiscardFirst,
+      	DiscardSecond,
+      	OpenEnd,
+      	CloseEnd,
       	Invalidate = Value
   }
+
 
 object AssetEvent extends Enumeration {
     type AssetEvent = Value
@@ -138,62 +143,62 @@ def isFieldPresent(event: Map[String, Any], field: AssetEventField.AssetEventFie
 
 val  durationCalcMatrix = 
 		 Map(
-				 (AssetEvent.AssetTunedEvent, AssetEvent.AssetTunedEvent) -> ("discard", null, null),
-				 (AssetEvent.AssetTunedEvent, AssetEvent.AssetTunePauseEvent) -> ("use", AssetEventField.currentWatchPoint, AssetEventField.stopPoint),
-				 (AssetEvent.AssetTunedEvent, AssetEvent.AssetTuneResumeEvent) -> ("discard", null, null),
-				 (AssetEvent.AssetTunedEvent, AssetEvent.AssetTuneForwardEvent) -> ("use", AssetEventField.currentWatchPoint, AssetEventField.trickStartPoint),
-				 (AssetEvent.AssetTunedEvent, AssetEvent.AssetTuneRewindEvent) -> ("use", AssetEventField.currentWatchPoint, AssetEventField.trickStartPoint),
-				 (AssetEvent.AssetTunedEvent, AssetEvent.AssetStartOverEvent) -> ("use", AssetEventField.currentWatchPoint, AssetEventField.startOverPoint),
-				 (AssetEvent.AssetTunedEvent, AssetEvent.AssetTunedEnd) -> ("use", AssetEventField.currentWatchPoint, AssetEventField.currentWatchPoint),
-				 (AssetEvent.AssetTunedEvent, null) -> ("discard", null, null),
-				 (AssetEvent.AssetTunePauseEvent, AssetEvent.AssetTunedEvent) -> ("invalidate", null, null),
-				 (AssetEvent.AssetTunePauseEvent, AssetEvent.AssetTunePauseEvent) -> ("discard", AssetEventField.stopPoint, null),
-				 (AssetEvent.AssetTunePauseEvent, AssetEvent.AssetTuneResumeEvent) -> ("discard", null, null),
-				 (AssetEvent.AssetTunePauseEvent, AssetEvent.AssetTuneForwardEvent) -> ("discard", null, null),
-				 (AssetEvent.AssetTunePauseEvent, AssetEvent.AssetTuneRewindEvent) -> ("discard", null, null),
-				 (AssetEvent.AssetTunePauseEvent, AssetEvent.AssetStartOverEvent) -> ("discard", null, null),
-				 (AssetEvent.AssetTunePauseEvent, AssetEvent.AssetTunedEnd) -> ("discard", null, null),
-				 (AssetEvent.AssetTunePauseEvent, null) -> ("discard", null, null),
-				 (AssetEvent.AssetTuneResumeEvent, AssetEvent.AssetTunedEvent) -> ("invalidate", null, null),
-				 (AssetEvent.AssetTuneResumeEvent, AssetEvent.AssetTunePauseEvent) -> ("use", AssetEventField.startPoint, AssetEventField.stopPoint),
-				 (AssetEvent.AssetTuneResumeEvent, AssetEvent.AssetTuneResumeEvent) -> ("discard", AssetEventField.startPoint, null),
-				 (AssetEvent.AssetTuneResumeEvent, AssetEvent.AssetTuneForwardEvent) -> ("use", AssetEventField.startPoint, AssetEventField.trickStartPoint),
-				 (AssetEvent.AssetTuneResumeEvent, AssetEvent.AssetTuneRewindEvent) -> ("use", AssetEventField.startPoint, AssetEventField.trickStartPoint),
-				 (AssetEvent.AssetTuneResumeEvent, AssetEvent.AssetStartOverEvent) -> ("use", AssetEventField.startPoint, AssetEventField.startOverPoint),
-				 (AssetEvent.AssetTuneResumeEvent, AssetEvent.AssetTunedEnd) -> ("use", AssetEventField.startPoint, AssetEventField.currentWatchPoint),
-				 (AssetEvent.AssetTuneResumeEvent, null) -> ("discard", null, null),
-				 (AssetEvent.AssetTuneForwardEvent, AssetEvent.AssetTunedEvent) -> ("discard", AssetEventField.trickStartPoint, null),
-				 (AssetEvent.AssetTuneForwardEvent, AssetEvent.AssetTunePauseEvent) -> ("use", AssetEventField.trickEndPoint, AssetEventField.stopPoint),
-				 (AssetEvent.AssetTuneForwardEvent, AssetEvent.AssetTuneResumeEvent) -> ("discard", AssetEventField.trickEndPoint, null),
-				 (AssetEvent.AssetTuneForwardEvent, AssetEvent.AssetTuneForwardEvent) -> ("use", AssetEventField.trickEndPoint, AssetEventField.trickStartPoint),
-				 (AssetEvent.AssetTuneForwardEvent, AssetEvent.AssetTuneRewindEvent) -> ("use", AssetEventField.trickEndPoint, AssetEventField.trickStartPoint),
-				 (AssetEvent.AssetTuneForwardEvent, AssetEvent.AssetStartOverEvent) -> ("use", AssetEventField.trickEndPoint, AssetEventField.startOverPoint),
-				 (AssetEvent.AssetTuneForwardEvent, AssetEvent.AssetTunedEnd) -> ("use", AssetEventField.trickEndPoint, AssetEventField.currentWatchPoint),
-				 (AssetEvent.AssetTuneForwardEvent, null) -> ("discard", null, null),
-				 (AssetEvent.AssetTuneRewindEvent, AssetEvent.AssetTunedEvent) -> ("discard", AssetEventField.trickStartPoint, null),
-				 (AssetEvent.AssetTuneRewindEvent, AssetEvent.AssetTunePauseEvent) -> ("use", AssetEventField.trickEndPoint, AssetEventField.stopPoint),
-				 (AssetEvent.AssetTuneRewindEvent, AssetEvent.AssetTuneResumeEvent) -> ("discard", AssetEventField.trickEndPoint,  null),
-				 (AssetEvent.AssetTuneRewindEvent, AssetEvent.AssetTuneForwardEvent) -> ("use", AssetEventField.trickEndPoint, AssetEventField.trickStartPoint),
-				 (AssetEvent.AssetTuneRewindEvent, AssetEvent.AssetTuneRewindEvent) -> ("use", AssetEventField.trickEndPoint, AssetEventField.trickStartPoint),
-				 (AssetEvent.AssetTuneRewindEvent, AssetEvent.AssetStartOverEvent) -> ("use", AssetEventField.trickEndPoint, AssetEventField.startOverPoint),
-				 (AssetEvent.AssetTuneRewindEvent, AssetEvent.AssetTunedEnd) -> ("use", AssetEventField.trickEndPoint, AssetEventField.currentWatchPoint),
-				 (AssetEvent.AssetTuneRewindEvent, null) -> ("discard", null, null),
-				 (AssetEvent.AssetStartOverEvent, AssetEvent.AssetTunedEvent) -> ("discard", AssetEventField.programStartTime, null),
-				 (AssetEvent.AssetStartOverEvent, AssetEvent.AssetTunePauseEvent) -> ("use", AssetEventField.programStartTime, AssetEventField.stopPoint),
-				 (AssetEvent.AssetStartOverEvent, AssetEvent.AssetTuneResumeEvent) -> ("discard", AssetEventField.programStartTime, null),
-				 (AssetEvent.AssetStartOverEvent, AssetEvent.AssetTuneForwardEvent) -> ("use", AssetEventField.programStartTime, AssetEventField.trickStartPoint),
-				 (AssetEvent.AssetStartOverEvent, AssetEvent.AssetTuneRewindEvent) -> ("use", AssetEventField.programStartTime, AssetEventField.trickStartPoint),
-				 (AssetEvent.AssetStartOverEvent, AssetEvent.AssetStartOverEvent) -> ("use", AssetEventField.programStartTime, AssetEventField.startOverPoint),
-				 (AssetEvent.AssetStartOverEvent, AssetEvent.AssetTunedEnd) -> ("use", AssetEventField.programStartTime, AssetEventField.currentWatchPoint),
-				 (AssetEvent.AssetStartOverEvent, null) -> ("discard", null, null),
-				 (AssetEvent.AssetTunedEnd, AssetEvent.AssetTunedEvent) -> ("discard", null, null),
-				 (AssetEvent.AssetTunedEnd, AssetEvent.AssetTunePauseEvent) -> ("discard", null, null),
-				 (AssetEvent.AssetTunedEnd, AssetEvent.AssetTuneResumeEvent) -> ("discard",null, null),
-				 (AssetEvent.AssetTunedEnd, AssetEvent.AssetTuneForwardEvent) -> ("discard",null, null),
-				 (AssetEvent.AssetTunedEnd, AssetEvent.AssetTuneRewindEvent) -> ("discard",null, null),
-				 (AssetEvent.AssetTunedEnd, AssetEvent.AssetStartOverEvent) -> ("discard",null, null),
-				 (AssetEvent.AssetTunedEnd, AssetEvent.AssetTunedEnd) -> ("discard", null, null),
-				 (AssetEvent.AssetTunedEnd, null) -> ("discard", null, null)
+				 (AssetEvent.AssetTunedEvent.toString(), AssetEvent.AssetTunedEvent.toString()) -> (AssetEventProcess.DiscardFirst, null, null),
+				 (AssetEvent.AssetTunedEvent.toString(), AssetEvent.AssetTunePauseEvent.toString()) -> (AssetEventProcess.Process, AssetEventField.currentWatchPoint, AssetEventField.stopPoint),
+				 (AssetEvent.AssetTunedEvent.toString(), AssetEvent.AssetTuneResumeEvent.toString()) -> (AssetEventProcess.DiscardFirst, null, null),
+				 (AssetEvent.AssetTunedEvent.toString(), AssetEvent.AssetTuneForwardEvent.toString()) -> (AssetEventProcess.Process, AssetEventField.currentWatchPoint, AssetEventField.trickStartPoint),
+				 (AssetEvent.AssetTunedEvent.toString(), AssetEvent.AssetTuneRewindEvent.toString()) -> (AssetEventProcess.Process, AssetEventField.currentWatchPoint, AssetEventField.trickStartPoint),
+				 (AssetEvent.AssetTunedEvent.toString(), AssetEvent.AssetStartOverEvent.toString()) -> (AssetEventProcess.Process, AssetEventField.currentWatchPoint, AssetEventField.startOverPoint),
+				 (AssetEvent.AssetTunedEvent.toString(), AssetEvent.AssetTunedEnd.toString()) -> (AssetEventProcess.Process, AssetEventField.currentWatchPoint, AssetEventField.currentWatchPoint),
+				 (AssetEvent.AssetTunedEvent.toString(), null) -> (AssetEventProcess.OpenEnd, AssetEventField.currentWatchPoint, null),
+				 (AssetEvent.AssetTunePauseEvent.toString(), AssetEvent.AssetTunedEvent.toString()) -> (AssetEventProcess.Invalidate, null, null),
+				 (AssetEvent.AssetTunePauseEvent.toString(), AssetEvent.AssetTunePauseEvent.toString()) -> (AssetEventProcess.DiscardSecond, null, null),
+				 (AssetEvent.AssetTunePauseEvent.toString(), AssetEvent.AssetTuneResumeEvent.toString()) -> (AssetEventProcess.Discard, null, null),
+				 (AssetEvent.AssetTunePauseEvent.toString(), AssetEvent.AssetTuneForwardEvent.toString()) -> (AssetEventProcess.Discard, null, null),
+				 (AssetEvent.AssetTunePauseEvent.toString(), AssetEvent.AssetTuneRewindEvent.toString()) -> (AssetEventProcess.Discard, null, null),
+				 (AssetEvent.AssetTunePauseEvent.toString(), AssetEvent.AssetStartOverEvent.toString()) -> (AssetEventProcess.Discard, null, null),
+				 (AssetEvent.AssetTunePauseEvent.toString(), AssetEvent.AssetTunedEnd.toString()) -> (AssetEventProcess.Discard, null, null),
+				 (AssetEvent.AssetTunePauseEvent.toString(), null) -> (AssetEventProcess.CloseEnd, AssetEventField.stopPoint, null),
+				 (AssetEvent.AssetTuneResumeEvent.toString(), AssetEvent.AssetTunedEvent.toString()) -> (AssetEventProcess.Invalidate, null, null),
+				 (AssetEvent.AssetTuneResumeEvent.toString(), AssetEvent.AssetTunePauseEvent.toString()) -> (AssetEventProcess.Process, AssetEventField.startPoint, AssetEventField.stopPoint),
+				 (AssetEvent.AssetTuneResumeEvent.toString(), AssetEvent.AssetTuneResumeEvent.toString()) -> (AssetEventProcess.DiscardSecond, null, null),
+				 (AssetEvent.AssetTuneResumeEvent.toString(), AssetEvent.AssetTuneForwardEvent.toString()) -> (AssetEventProcess.Process, AssetEventField.startPoint, AssetEventField.trickStartPoint),
+				 (AssetEvent.AssetTuneResumeEvent.toString(), AssetEvent.AssetTuneRewindEvent.toString()) -> (AssetEventProcess.Process, AssetEventField.startPoint, AssetEventField.trickStartPoint),
+				 (AssetEvent.AssetTuneResumeEvent.toString(), AssetEvent.AssetStartOverEvent.toString()) -> (AssetEventProcess.Process, AssetEventField.startPoint, AssetEventField.startOverPoint),
+				 (AssetEvent.AssetTuneResumeEvent.toString(), AssetEvent.AssetTunedEnd.toString()) -> (AssetEventProcess.Process, AssetEventField.startPoint, AssetEventField.currentWatchPoint),
+				 (AssetEvent.AssetTuneResumeEvent.toString(), null) -> (AssetEventProcess.OpenEnd,  AssetEventField.startPoint, null),
+				 (AssetEvent.AssetTuneForwardEvent.toString(), AssetEvent.AssetTunedEvent.toString()) -> (AssetEventProcess.DiscardSecond, null, null),
+				 (AssetEvent.AssetTuneForwardEvent.toString(), AssetEvent.AssetTunePauseEvent.toString()) -> (AssetEventProcess.Process, AssetEventField.trickEndPoint, AssetEventField.stopPoint),
+				 (AssetEvent.AssetTuneForwardEvent.toString(), AssetEvent.AssetTuneResumeEvent.toString()) -> (AssetEventProcess.DiscardSecond, null, null),
+				 (AssetEvent.AssetTuneForwardEvent.toString(), AssetEvent.AssetTuneForwardEvent.toString()) -> (AssetEventProcess.Process, AssetEventField.trickEndPoint, AssetEventField.trickStartPoint),
+				 (AssetEvent.AssetTuneForwardEvent.toString(), AssetEvent.AssetTuneRewindEvent.toString()) -> (AssetEventProcess.Process, AssetEventField.trickEndPoint, AssetEventField.trickStartPoint),
+				 (AssetEvent.AssetTuneForwardEvent.toString(), AssetEvent.AssetStartOverEvent.toString()) -> (AssetEventProcess.Process, AssetEventField.trickEndPoint, AssetEventField.startOverPoint),
+				 (AssetEvent.AssetTuneForwardEvent.toString(), AssetEvent.AssetTunedEnd.toString()) -> (AssetEventProcess.Process, AssetEventField.trickEndPoint, AssetEventField.currentWatchPoint),
+				 (AssetEvent.AssetTuneForwardEvent.toString(), null) -> (AssetEventProcess.OpenEnd, AssetEventField.trickEndPoint, null),
+				 (AssetEvent.AssetTuneRewindEvent.toString(), AssetEvent.AssetTunedEvent.toString()) -> (AssetEventProcess.DiscardSecond, null, null),
+				 (AssetEvent.AssetTuneRewindEvent.toString(), AssetEvent.AssetTunePauseEvent.toString()) -> (AssetEventProcess.Process, AssetEventField.trickEndPoint, AssetEventField.stopPoint),
+				 (AssetEvent.AssetTuneRewindEvent.toString(), AssetEvent.AssetTuneResumeEvent.toString()) -> (AssetEventProcess.DiscardSecond, null,  null),
+				 (AssetEvent.AssetTuneRewindEvent.toString(), AssetEvent.AssetTuneForwardEvent.toString()) -> (AssetEventProcess.Process, AssetEventField.trickEndPoint, AssetEventField.trickStartPoint),
+				 (AssetEvent.AssetTuneRewindEvent.toString(), AssetEvent.AssetTuneRewindEvent.toString()) -> (AssetEventProcess.Process, AssetEventField.trickEndPoint, AssetEventField.trickStartPoint),
+				 (AssetEvent.AssetTuneRewindEvent.toString(), AssetEvent.AssetStartOverEvent.toString()) -> (AssetEventProcess.Process, AssetEventField.trickEndPoint, AssetEventField.startOverPoint),
+				 (AssetEvent.AssetTuneRewindEvent.toString(), AssetEvent.AssetTunedEnd.toString()) -> (AssetEventProcess.Process, AssetEventField.trickEndPoint, AssetEventField.currentWatchPoint),
+				 (AssetEvent.AssetTuneRewindEvent.toString(), null) -> (AssetEventProcess.OpenEnd, AssetEventField.trickEndPoint, null),
+				 (AssetEvent.AssetStartOverEvent.toString(), AssetEvent.AssetTunedEvent.toString()) -> (AssetEventProcess.DiscardSecond, null, null),
+				 (AssetEvent.AssetStartOverEvent.toString(), AssetEvent.AssetTunePauseEvent.toString()) -> (AssetEventProcess.Process, AssetEventField.programStartTime, AssetEventField.stopPoint),
+				 (AssetEvent.AssetStartOverEvent.toString(), AssetEvent.AssetTuneResumeEvent.toString()) -> (AssetEventProcess.DiscardSecond, null, null),
+				 (AssetEvent.AssetStartOverEvent.toString(), AssetEvent.AssetTuneForwardEvent.toString()) -> (AssetEventProcess.Process, AssetEventField.programStartTime, AssetEventField.trickStartPoint),
+				 (AssetEvent.AssetStartOverEvent.toString(), AssetEvent.AssetTuneRewindEvent.toString()) -> (AssetEventProcess.Process, AssetEventField.programStartTime, AssetEventField.trickStartPoint),
+				 (AssetEvent.AssetStartOverEvent.toString(), AssetEvent.AssetStartOverEvent.toString()) -> (AssetEventProcess.Process, AssetEventField.programStartTime, AssetEventField.startOverPoint),
+				 (AssetEvent.AssetStartOverEvent.toString(), AssetEvent.AssetTunedEnd.toString()) -> (AssetEventProcess.Process, AssetEventField.programStartTime, AssetEventField.currentWatchPoint),
+				 (AssetEvent.AssetStartOverEvent.toString(), null) -> (AssetEventProcess.OpenEnd, null, null),
+				 (AssetEvent.AssetTunedEnd.toString(), AssetEvent.AssetTunedEvent.toString()) -> (AssetEventProcess.DiscardFirst, null, null),
+				 (AssetEvent.AssetTunedEnd.toString(), AssetEvent.AssetTunePauseEvent.toString()) -> (AssetEventProcess.DiscardFirst, null, null),
+				 (AssetEvent.AssetTunedEnd.toString(), AssetEvent.AssetTuneResumeEvent.toString()) -> (AssetEventProcess.DiscardFirst,null, null),
+				 (AssetEvent.AssetTunedEnd.toString(), AssetEvent.AssetTuneForwardEvent.toString()) -> (AssetEventProcess.DiscardFirst,null, null),
+				 (AssetEvent.AssetTunedEnd.toString(), AssetEvent.AssetTuneRewindEvent.toString()) -> (AssetEventProcess.DiscardFirst,null, null),
+				 (AssetEvent.AssetTunedEnd.toString(), AssetEvent.AssetStartOverEvent.toString()) -> (AssetEventProcess.DiscardFirst,null, null),
+				 (AssetEvent.AssetTunedEnd.toString(), AssetEvent.AssetTunedEnd.toString()) -> (AssetEventProcess.DiscardFirst, null, null),
+				 (AssetEvent.AssetTunedEnd.toString(), null) -> (AssetEventProcess.CloseEnd, AssetEventField.currentWatchPoint, null)
    )
 
 /*
@@ -413,6 +418,164 @@ def isValidAssetTunedEvent(eventList: List[Map[String, Any]]) : Boolean = {
     false
   }    
 }
+
+
+def getStartTime(event:Map[String, Any], firstEventType:String, fieldUsed:AssetEventField.AssetEventField) : Long ={
+   if (firstEventType != AssetEvent.AssetStartOverEvent.toString){
+		  getEventFieldNumeric(event, fieldUsed).get.toLong
+		}
+		else if (getEventFieldString(event,AssetEventField.assetType)=="VodAsset"){
+		  0
+		}
+		else{
+		  getEventFieldNumeric(event, AssetEventField.programStartTime).get.toLong
+		}
+}
+
+def getEndTime(event:Map[String, Any], secondEventType:String, fieldUsed:AssetEventField.AssetEventField) : Long ={
+   if (secondEventType != AssetEvent.AssetStartOverEvent.toString || getEventFieldString(event,AssetEventField.assetType)=="VodAsset"){
+		  getEventFieldNumeric(event, fieldUsed).get.toLong
+		}
+		else{
+		  getEventFieldNumeric(event, AssetEventField.programStartTime).get.toLong + 
+		  getEventFieldNumeric(event, fieldUsed).get.toLong
+		}
+}
+
+def getSection(	firstEvent:Map[String, Any], 
+				firstEventType:String, 
+				firstFieldUsed:AssetEventField.AssetEventField, 
+				secondEvent:Map[String, Any], 
+				secondEventType:String, 
+				secondFieldUsed:AssetEventField.AssetEventField
+				) : List[Tuple5[String, String, Long, Long, String]]={
+
+	val startTime = getStartTime(firstEvent,firstEventType,firstFieldUsed)
+	val endTime = getEndTime(secondEvent,secondEventType, secondFieldUsed)
+	val startDeviceTime = getEventFieldNumeric(firstEvent, AssetEventField.deviceTimestamp).get.toLong
+	val endDeviceTime = getEventFieldNumeric(secondEvent, AssetEventField.deviceTimestamp).get.toLong
+	val programEndTime = getEventFieldNumeric(firstEvent, AssetEventField.programEndTime).get.toLong
+	val splitType = "SplitPoint"
+	if (!(startDeviceTime <= programEndTime &&  programEndTime < endDeviceTime)){
+	  List(
+			  (firstEventType,
+			   secondEventType,   
+			   startTime,
+			   endTime,
+			   getEventFieldString(firstEvent,AssetEventField.liveTuneType)
+			   )
+	      )
+	} else{
+		val splitTime = startTime + (programEndTime -startDeviceTime )
+		 	List((firstEventType,
+			   splitType,   
+			   startTime,
+			   splitTime,
+			   getEventFieldString(firstEvent,AssetEventField.liveTuneType)
+			   )
+			   ):::
+			   List((splitType,
+			   secondEventType,   
+			   splitTime,
+			   endTime,
+			   "Catch-up"
+			   )
+			   )
+	}
+}
+
+def getDurationSections(events: List[Map[String, Any]],  durationSections: List[Tuple5[String, String, Long, Long, String]]) : List[Tuple5[String, String, Long, Long, String]]  = {
+	if (events.isEmpty) return durationSections
+
+	val firstEvent = events(0)
+
+	if (events.length > 1) {
+	    val nextEvent = events(1)
+	    val firstEventType = getSchemaProperty(firstEvent, SchemaProperty.name)
+	    val secondEventType = getSchemaProperty(nextEvent, SchemaProperty.name)
+		val processInstr = durationCalcMatrix((firstEventType, secondEventType))
+		if(processInstr._1 == AssetEventProcess.Process){
+			getDurationSections(
+			    			events.tail,
+			    			durationSections:::
+			    			getSection(events(0),firstEventType,processInstr._2,events(1),secondEventType, processInstr._3)
+			       )
+			  }
+			
+	    else if (processInstr._1 == AssetEventProcess.Discard){
+				getDurationSections(events.tail,
+			    durationSections
+			   )
+		}
+		else if (processInstr._1 == AssetEventProcess.DiscardFirst){
+				getDurationSections(events.tail,
+			    durationSections:::
+			     List((firstEventType,
+			    	   secondEventType,
+			    	   -1L,
+			    	   -1L,
+			    	   getEventFieldString(events(0),AssetEventField.liveTuneType)
+			    		)
+			        )
+			   )
+		}
+		else if (processInstr._1 == AssetEventProcess.DiscardSecond)
+		{
+				getDurationSections(List(events(0)):::events.tail.tail,
+			    durationSections:::
+			     List((firstEventType,
+			    	   secondEventType,
+			    	   -1L,
+			    	   -1L,
+			    	   getEventFieldString(events(0),AssetEventField.liveTuneType)
+			    		)
+			        )
+			   )
+		}
+		else {
+			durationSections:::
+			     List((firstEventType,
+			    	   secondEventType,
+			    	   -2L,
+			    	   -2L,
+			    	   getEventFieldString(events(0),AssetEventField.liveTuneType)
+			    		)
+			        )
+		}
+	}
+	else{
+		val processInstr = durationCalcMatrix((getSchemaProperty(events(0), SchemaProperty.name),
+								                 null))
+		val firstEventType = getSchemaProperty(events(0), SchemaProperty.name)
+		if(processInstr._1 == AssetEventProcess.OpenEnd){
+			durationSections:::
+			    				List(
+			    					 (firstEventType,
+			    					  null,   
+			    					  getStartTime(events(0),firstEventType,processInstr._2),
+			    					  -1L,
+			    					  getEventFieldString(events(0),AssetEventField.liveTuneType)
+			    					 )
+			                         )
+		}else {
+		 if(durationSections.length == 0){
+		   durationSections:::
+			    				List(
+			    					 (
+			    					  null,
+			    					  firstEventType,
+			    					  -1L,
+			    					  getEndTime(events(0),firstEventType, processInstr._2),
+			    					  getEventFieldString(events(0),AssetEventField.liveTuneType)
+			    					 )
+			                         )
+		 }
+		 else
+			 durationSections 
+		}					        
+	}
+}
+
 
 /*
  * Name:  	getSortedSection

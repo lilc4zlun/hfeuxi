@@ -1,3 +1,10 @@
+object AssetEventProcess extends Enumeration {
+    type AssetEventProcess = Value
+    val Process,
+      	Discard,
+      	Invalidate = Value
+  }
+
 object AssetEvent extends Enumeration {
     type AssetEvent = Value
     val AssetTunedEvent,
@@ -389,16 +396,22 @@ def isValidAssetTunedEvent(eventList: List[Map[String, Any]]) : Boolean = {
   val fstEvent = eventList(0)
   println("\ndebug xxx1 -> "+fstEvent)
   if((getSchemaProperty(fstEvent, SchemaProperty.name) == AssetEvent.AssetTunedEvent.toString) && (isFieldPresent(fstEvent, AssetEventField.currentWatchPoint))){
+       println("\ndebug xxx1 -> stp1")
      if((((getEventFieldString(fstEvent,AssetEventField.assetType) == "LinearAsset") && getEventFieldNumeric(fstEvent, AssetEventField.currentWatchPoint).get.toLong > 0)
          || 
          (getEventFieldString(fstEvent,AssetEventField.assetType) == "VodAsset" && getEventFieldNumeric(fstEvent, AssetEventField.currentWatchPoint).get.toLong >= 0))){
+           println("\ndebug xxx1 -> stp2")
         true
      }
      else
-       false
+	{println("\ndebug xxx1 -> stp3")
+       	false
+        }
   }
-  else 
-    false    
+  else {
+    println("\ndebug xxx1 -> stp2")
+    false
+  }    
 }
 
 /*

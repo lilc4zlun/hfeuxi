@@ -74,7 +74,8 @@ val  events_simple_timesift_case_1 = List(
                                              "name" -> "AssetTuneForwardEvent", 
                                              "event.version" -> "0.0.6", 
                                              "eventData" -> m4
-                                 ),
+                                 )
+			,
 
               		Map(       "namespace" -> "intelmedia.ws.ceventsent", 
                                              "name" -> "AssetTunedEnd", 
@@ -162,6 +163,7 @@ val tmp2 = sumVideoStreamDuration(sortedSectionList.filter(x => x._3 == "Time-Sh
 val tmp3 = sumVideoStreamDuration(sortedSectionList.filter(x => x._3 == "Catch-up"), 0).toLong
 val tmp4 = sumVideoStreamDuration(sortedSectionList, 0).toLong
 val tmp5 = sumVideoStreamDistinctDuration(sortedSectionList, 0, 0).toLong
+val tmp6 = getDurationSections(events_simple_timesift_case_1, List());
 /****
 println("\n*************************************************************************************************************************************")
 println("\nSections -> "+tmp0)
