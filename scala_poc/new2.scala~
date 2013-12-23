@@ -65,6 +65,48 @@ object AssetEvent extends Enumeration {
     val catchUp = Value("Catch-up")
   }
 
+
+  case class AssetEventFieldUsed(
+		 sectionStartField: Option[AssetEventField.AssetEventField],
+		 sectionEndField: Option[AssetEventField.AssetEventField]
+  )
+ 
+ object DuractionCalcMatrix {
+
+   private val AssetEventCalcMatrix = 
+	 Map(
+			 AssetEvent.AssetTunedEvent.toString() -> AssetEventFieldUsed(Some(AssetEventField.currentWatchPoint), None),
+			 AssetEvent.AssetTunedEnd.toString() -> AssetEventFieldUsed(None, Some(AssetEventField.currentWatchPoint)),
+			 AssetEvent.AssetTunePauseEvent.toString() -> AssetEventFieldUsed(None, Some(AssetEventField.stopPoint)),
+			 AssetEvent.AssetTuneResumeEvent.toString() -> AssetEventFieldUsed(Some(AssetEventField.startPoint),None),
+			 AssetEvent.AssetTuneForwardEvent.toString() -> AssetEventFieldUsed(Some(AssetEventField.trickEndPoint), Some(AssetEventField.trickStartPoint)),
+			 AssetEvent.AssetTuneRewindEvent.toString() -> AssetEventFieldUsed(Some(AssetEventField.trickEndPoint), Some(AssetEventField.trickStartPoint)),
+			 AssetEvent.AssetStartOverEvent.toString() -> AssetEventFieldUsed(Some(AssetEventField.programStartTime), Some(AssetEventField.startOverPoint))				
+	    )
+
+  private val AssetEventInvalidateException =
+    List(	(AssetEvent.AssetTunePauseEvent.toString(), AssetEvent.AssetTuneResumeEvent.toString()),
+    		(AssetEvent.AssetTunePauseEvent.toString(), AssetEvent.AssetTuneForwardEvent.toString()),
+    		(AssetEvent.AssetTunePauseEvent.toString(), AssetEvent.AssetTuneRewindEvent.toString()),
+    		(AssetEvent.AssetTunePauseEvent.toString(),  AssetEvent.AssetStartOverEvent.toString()),
+    		(AssetEvent.AssetTunePauseEvent.toString(), AssetEvent.AssetTunedEnd.toString())
+        )
+        
+ def findSectionFields(eventType : String):Option[AssetEventFieldUsed]= AssetEventCalcMatrix.get(eventType)
+ 
+ def findSectionStartEnd(startEventType : String, endEventType : String) 
+     :Tuple2[Option[AssetEventField.AssetEventField], Option[AssetEventField.AssetEventField]] = {
+	   (findSectionFields(startEventType).flatMap(_.sectionStartField), findSectionFields(endEventType).flatMap(_.sectionEndField));
+   }
+ def isOnExceptionList(firstEvent:String, secondEvent:String):Boolean ={
+	   if(AssetEventInvalidateException.indexOf((firstEvent, secondEvent)) < 0) false
+	   else true
+ }  
+   
+ }
+
+
+
 val EventData = "eventData"
 
 def getEventData(event: Map[String, Any]): Map[String, Any] = {
@@ -484,6 +526,142 @@ def getSection(	firstEvent:Map[String, Any],
 	}
 }
 
+def getDurationFieldValue(event: Map[String, Any], assetField:AssetEventField.AssetEventField) : Long = {
+  getEventFieldNumeric(event, assetField) match {
+        case Some(x) => x.toLong
+        case None => -1L
+      }
+}
+
+def getAssetFieldValue(event: Map[String, Any], eventType:String, assetField:AssetEventField.AssetEventField, sectionType:String) : Long = {
+  if (eventType != "AssetStartOverEvent") 
+	  getDurationFieldValue(event, assetField) 
+  else{
+    if(getEventFieldString(event, AssetEventField.assetType) == "VodAsset"){
+      if(sectionType == "end")
+        getDurationFieldValue(event, assetField) 
+      else 0L
+    }
+    else{
+      val programStart = getDurationFieldValue(event, AssetEventField.programStartTime)
+      if (programStart == -1L) -1L
+      else
+      if(sectionType == "end"){
+        val startOverDistance = getDurationFieldValue(event, assetField) 
+        if (startOverDistance == -1L) -1L
+        else
+        	programStart + startOverDistance
+      }
+      else
+        programStart
+    }
+  }
+}
+
+def calcSectionDuration(startEvent: Map[String, Any], 
+						endEvent: Map[String, Any]
+						): Tuple7[Option[String], Option[String], Boolean, Long, Long, Long, String] = {
+  val startEventType = getSchemaProperty(startEvent, SchemaProperty.name)
+  val endEventType =  getSchemaProperty(endEvent, SchemaProperty.name)
+  val calcFields = DuractionCalcMatrix.findSectionStartEnd(startEventType, endEventType)
+  val defaultRecord = 
+    	(Option(startEventType), 
+		  Option(endEventType), 
+		  false, 
+		  -1L, 
+		  -1L, 
+		  -1L, 
+		  getEventFieldString(startEvent,AssetEventField.liveTuneType)
+		 )
+  if ((calcFields._1 == None) || (calcFields._2 == None)){
+	  if(DuractionCalcMatrix.isOnExceptionList(startEventType, endEventType))
+	    (Option(startEventType), 
+		  Option(endEventType), 
+		  false, 
+		  -1L, 
+		  -1L, 
+		  0L, 
+		  getEventFieldString(startEvent,AssetEventField.liveTuneType)
+		 )
+		 else
+		 defaultRecord
+   }
+  else {
+    val startFieldName : AssetEventField.AssetEventField = calcFields._1 match {
+    		case Some(x:AssetEventField.AssetEventField) => x 
+    		case None => AssetEventField.deviceTimestamp
+    };
+    val endFieldName = calcFields._2 match {
+    		case Some(x:AssetEventField.AssetEventField) => x 
+    		case None => AssetEventField.deviceTimestamp
+    };
+    val startEventTime = getAssetFieldValue(startEvent, startEventType, startFieldName, "start")
+    val endEventTime = getAssetFieldValue(endEvent, endEventType, endFieldName, "end")
+    if((startEventTime > endEventTime) || (startEventTime == -1L ) || (endEventTime == -1L))
+      defaultRecord
+    else {
+    	(Option(startEventType), 
+		 Option(endEventType), 
+		 true, 
+		 startEventTime, 
+		 endEventTime, 
+		 endEventTime-startEventTime, 
+		 getEventFieldString(startEvent,AssetEventField.liveTuneType)
+		)
+    }
+  }  
+}
+
+def buildSection(events: List[Map[String, Any]], 
+				 prevEvent: Map[String, Any], 
+				 rsltList:List[Tuple7[Option[String], 
+				                      Option[String], 
+				                      Boolean, 
+				                      Long, 
+				                      Long, 
+				                      Long, 
+				                      String]
+				                ]
+                   ) 
+			    :List[Tuple7[Option[String], Option[String], Boolean, Long, Long, Long, String]] = {
+  val curEvent = events.head
+  val newSection = calcSectionDuration(prevEvent,curEvent)	
+  if((newSection._3 == false && 
+      newSection._6 == -1L))
+    List(newSection)
+   else if (events.tail.isEmpty){
+	   if(newSection._3)
+		   rsltList::: List(newSection)
+	    else
+	       rsltList	
+   }
+   else{
+     if(newSection._3)
+		   buildSection(events.tail, curEvent,rsltList::: List(newSection))
+	    else
+	       buildSection(events.tail, curEvent, rsltList)	
+   }
+}
+
+def getTimeSections(events: List[Map[String, Any]]) : List[Tuple7[Option[String], Option[String], Boolean, Long, Long, Long, String]]  = {
+	val firstEventType = getSchemaProperty(events(0), SchemaProperty.name)
+	if (events.length == 1 || firstEventType != "AssetTunedEvent" ){
+		List((Option(firstEventType), 
+			  None, 
+			  false, 
+			  -1L, 
+			  -1L, 
+			  -1L, 
+			  getEventFieldString(events(0),AssetEventField.liveTuneType)
+			)
+			)
+		}
+		else
+		{
+			val secondEventType = getSchemaProperty(events(0), SchemaProperty.name)
+			buildSection(events.tail, events.head, List())
+		}
+}
 def getDurationSections(events: List[Map[String, Any]],  durationSections: List[Tuple5[String, String, Long, Long, String]]) : List[Tuple5[String, String, Long, Long, String]]  = {
 	if (events.isEmpty) return durationSections
 
